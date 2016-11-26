@@ -1,24 +1,7 @@
-const express = require('express')
 const request = require('request')
 const cheerio = require('cheerio')
-const app = express()
 
-const PORT = process.env.PORT || 3000
-
-app.get('/', (req, res) => {
-  const { url, selector } = req.query
-
-  scrap({ url, selector }, (scrapped) => {
-    const response = scrapped
-    res.send(response)
-  })
-})
-
-app.listen(PORT, () =>
-  console.log(`Listening on port ${PORT}!`)
-)
-
-const scrap = ({ url, selector }, cb) => {
+const scrap = (url, selector, cb) => {
   request(url, (err, res, html) => {
     if (err) {
       console.log(`ERROR scrapping '${url}' with '${selector}'!!`, err)
@@ -56,14 +39,19 @@ exports.handler = (event, context, callback) => {
   const params = event.queryStringParameters
   const url = params && params.url
   const selector = params && params.selector
+  const response = {
+    statusCode: 200,
+    headers: {},
+    body: ''
+  }
 
-  scrap({ url, selector }, (scrapped) => {
-    const response = {
-      statusCode: 200,
-      headers: {},
-      body: JSON.stringify(scrapped)
-    }
+  if (!url || !selector) {
+    response.body = 'Missing params'
+    return callback(null, response)
+  }
 
+  scrap(url, selector, (scrapped) => {
+    response.body = JSON.stringify(scrapped)
     callback(null, response)
   })
 }
